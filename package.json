@@ -1,0 +1,19 @@
+{
+  "name": "chassis",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Chassis — workspace root (packages/ only; the .NET server lives in server/)",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "generate:api-client": "npm run generate --workspace @chassis/api-client",
+    "build": "npm run build --workspace @chassis/ui",
+    "dev": "npm run dev --workspace @chassis/ui",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

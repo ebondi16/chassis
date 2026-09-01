@@ -1,0 +1,97 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <!--
+      Emit the OpenAPI document to the project directory on every build
+      (server/src/Chassis.Api/Chassis.Api.json). packages/api-client
+      regenerates its TypeScript from that file — no running server needed.
+    -->
+    <OpenApiGenerateDocumentsOnBuild>true</OpenApiGenerateDocumentsOnBuild>
+    <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)</OpenApiDocumentsDirectory>
+  </PropertyGroup>
+
+  <!-- Desktop packaging identity & config (§5.7/§8). `dotnet publish` reads these
+       + Properties/electron-builder.json and runs `npx electron-builder`.
+       Version is the app version the auto-updater compares against GitHub Releases. -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <Product>Chassis</Product>
+    <Title>Chassis</Title>
+    <ElectronTitle>Chassis</ElectronTitle>
+    <Company>Chassis</Company>
+    <Authors>Chassis</Authors>
+    <Description>Chassis — DDD .NET backend + Electron desktop shell + React frontend.</Description>
+    <ElectronPackageId>chassis</ElectronPackageId>
+    <ElectronSingleInstance>true</ElectronSingleInstance>
+    <RepositoryUrl>https://github.com/OWNER/chassis</RepositoryUrl>
+    <!-- <ElectronIcon>build\icon.png</ElectronIcon>  add a 512px PNG and uncomment -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Scalar.AspNetCore" />
+    <!-- Desktop shell. Every ElectronNET call lives in DesktopComposition/ (§9.4);
+         the -p:BuildFrontend branch and Program.cs never touch Electron.* . -->
+    <PackageReference Include="ElectronNET.Core" />
+    <PackageReference Include="ElectronNET.Core.AspNet" />
+    <!-- Design-time only: enables `dotnet ef` with this as the startup project. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Chassis.Application\Chassis.Application.csproj" />
+    <ProjectReference Include="..\Chassis.Infrastructure\Chassis.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <!-- =====================================================================
+       Frontend build step (§5.5): build packages/ui and copy its dist/ into
+       wwwroot/, so `dotnet run` / `dotnet publish` serves the React SPA from
+       this same app. Skip with  -p:BuildFrontend=false  (e.g. for a
+       server-only inner loop; the last build's wwwroot/ is still served).
+       ===================================================================== -->
+  <PropertyGroup>
+    <ChassisRepoRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '..', '..', '..'))</ChassisRepoRoot>
+    <ChassisFrontendDir>$([MSBuild]::NormalizeDirectory('$(ChassisRepoRoot)', 'packages', 'ui'))</ChassisFrontendDir>
+    <ChassisFrontendDist>$(ChassisFrontendDir)dist</ChassisFrontendDist>
+    <ChassisFrontendStamp>$(BaseIntermediateOutputPath)chassis.frontend.stamp</ChassisFrontendStamp>
+    <BuildFrontend Condition="'$(BuildFrontend)' == ''">true</BuildFrontend>
+  </PropertyGroup>
+
+  <ItemGroup Condition="Exists('$(ChassisFrontendDir)package.json')">
+    <ChassisFrontendSource Include="$(ChassisFrontendDir)src\**\*" />
+    <ChassisFrontendSource Include="$(ChassisRepoRoot)packages\api-client\src\**\*" />
+    <ChassisFrontendSource Include="$(ChassisFrontendDir)package.json;$(ChassisFrontendDir)index.html;$(ChassisFrontendDir)vite.config.ts;$(ChassisFrontendDir)tsconfig.json" />
+    <ChassisFrontendSource Include="$(ChassisRepoRoot)package-lock.json" />
+  </ItemGroup>
+
+  <Target Name="BuildChassisFrontend"
+          BeforeTargets="Build"
+          Condition="'$(BuildFrontend)' == 'true' and Exists('$(ChassisFrontendDir)package.json')"
+          Inputs="@(ChassisFrontendSource)"
+          Outputs="$(ChassisFrontendStamp)">
+    <Message Importance="high" Text="Chassis: building React SPA (packages/ui) → wwwroot/" />
+    <Exec Command="npm ci" WorkingDirectory="$(ChassisRepoRoot)" Condition="!Exists('$(ChassisRepoRoot)node_modules')" />
+    <Exec Command="npm run build --workspace @chassis/ui" WorkingDirectory="$(ChassisRepoRoot)" />
+    <Touch Files="$(ChassisFrontendStamp)" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="CopyChassisFrontendToWwwroot"
+          AfterTargets="BuildChassisFrontend"
+          BeforeTargets="Build"
+          Condition="Exists('$(ChassisFrontendDist)')">
+    <ItemGroup>
+      <ChassisFrontendDistFiles Include="$(ChassisFrontendDist)\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ChassisFrontendDistFiles)"
+          DestinationFiles="@(ChassisFrontendDistFiles->'$(MSBuildProjectDirectory)\wwwroot\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

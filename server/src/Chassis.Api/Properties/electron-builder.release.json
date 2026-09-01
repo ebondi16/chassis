@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.chassis.desktop",
+  "productName": "Chassis",
+  "compression": "maximum",
+  "directories": {
+    "output": "installer"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "OWNER",
+    "repo": "chassis",
+    "releaseType": "release"
+  },
+  "win": {
+    "target": [
+      { "target": "nsis", "arch": ["x64"] }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "artifactName": "${productName}-Setup-${version}.${ext}"
+  },
+  "mac": {
+    "category": "public.app-category.productivity",
+    "target": [
+      { "target": "dmg", "arch": ["arm64", "x64"] }
+    ]
+  },
+  "linux": {
+    "target": ["AppImage"],
+    "executableArgs": ["--no-sandbox"],
+    "artifactName": "${name}-${arch}-${version}.${ext}"
+  }
+}

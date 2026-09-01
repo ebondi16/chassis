@@ -1,0 +1,22 @@
+{
+  "name": "@chassis/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "TypeScript client for the Chassis API — types generated from the OpenAPI document, thin typed fetch wrapper (template §6, §9.5)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "generate": "openapi-typescript ../../server/src/Chassis.Api/Chassis.Api.json --output src/schema.d.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Chassis.Api/Chassis.Api.csproj" />
+    <Project Path="src/Chassis.Application/Chassis.Application.csproj" />
+    <Project Path="src/Chassis.Domain/Chassis.Domain.csproj" />
+    <Project Path="src/Chassis.Infrastructure/Chassis.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Chassis.Application.Tests/Chassis.Application.Tests.csproj" />
+    <Project Path="tests/Chassis.Domain.Tests/Chassis.Domain.Tests.csproj" />
+    <Project Path="tests/Chassis.Infrastructure.Tests/Chassis.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

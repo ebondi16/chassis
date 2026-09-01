@@ -1,0 +1,14 @@
+# Normalize line endings: LF in the repo, checked out native on Windows only
+# where it matters. Keeps .NET + Node tooling from fighting over CRLF.
+* text=auto eol=lf
+
+*.sln     text eol=crlf
+*.slnx    text eol=lf
+
+# Generated / binary-ish
+*.png     binary
+*.jpg     binary
+*.ico     binary
+package-lock.json  -diff linguist-generated
+server/src/Chassis.Api/Chassis.Api.json  -diff linguist-generated
+packages/api-client/src/schema.d.ts      -diff linguist-generated
