@@ -10,13 +10,40 @@ namespace Chassis.Infrastructure;
 
 public static class DependencyInjection
 {
-    /// <param name="connectionString">
-    /// SQLite connection string for the desktop build (e.g. <c>Data Source=chassis.db</c>).
-    /// The web host passes a PostgreSQL connection string and swaps the provider.
+    /// <summary>Assembly holding the SQLite migrations (the desktop store).</summary>
+    public const string SqliteMigrationsAssembly = "Chassis.Infrastructure.Migrations.Sqlite";
+
+    /// <summary>Assembly holding the PostgreSQL migrations (the hosted store).</summary>
+    public const string NpgsqlMigrationsAssembly = "Chassis.Infrastructure.Migrations.Npgsql";
+
+    /// <param name="provider">
+    /// SQLite for the desktop build, PostgreSQL for a hosted deployment. The
+    /// caller (<c>Program.cs</c>) resolves this from config, defaulting by run
+    /// mode. Migrations are per-provider — see the two <c>*.Migrations.*</c>
+    /// assemblies.
     /// </param>
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
+    /// <param name="connectionString">Provider-appropriate connection string.</param>
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        DatabaseProvider provider,
+        string connectionString)
     {
-        services.AddDbContext<ChassisDbContext>(options => options.UseSqlite(connectionString));
+        services.AddDbContext<ChassisDbContext>(options =>
+        {
+            switch (provider)
+            {
+                case DatabaseProvider.Sqlite:
+                    options.UseSqlite(connectionString, sqlite =>
+                        sqlite.MigrationsAssembly(SqliteMigrationsAssembly));
+                    break;
+                case DatabaseProvider.Postgres:
+                    options.UseNpgsql(connectionString, npgsql =>
+                        npgsql.MigrationsAssembly(NpgsqlMigrationsAssembly));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(provider), provider, "Unknown database provider.");
+            }
+        });
 
         services.AddScoped<INoteRepository, NoteRepository>();
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();

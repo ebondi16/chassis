@@ -23,7 +23,7 @@
     <Description>Chassis — DDD .NET backend + Electron desktop shell + React frontend.</Description>
     <ElectronPackageId>chassis</ElectronPackageId>
     <ElectronSingleInstance>true</ElectronSingleInstance>
-    <RepositoryUrl>https://github.com/OWNER/chassis</RepositoryUrl>
+    <RepositoryUrl>https://github.com/ebondi16/chassis</RepositoryUrl>
     <!-- <ElectronIcon>build\icon.png</ElectronIcon>  add a 512px PNG and uncomment -->
   </PropertyGroup>
 
@@ -48,6 +48,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Chassis.Application\Chassis.Application.csproj" />
     <ProjectReference Include="..\Chassis.Infrastructure\Chassis.Infrastructure.csproj" />
+    <ProjectReference Include="..\Chassis.Infrastructure.Migrations.Sqlite\Chassis.Infrastructure.Migrations.Sqlite.csproj" />
+    <ProjectReference Include="..\Chassis.Infrastructure.Migrations.Npgsql\Chassis.Infrastructure.Migrations.Npgsql.csproj" />
   </ItemGroup>
 
   <!-- =====================================================================
@@ -71,27 +73,18 @@
     <ChassisFrontendSource Include="$(ChassisRepoRoot)package-lock.json" />
   </ItemGroup>
 
-  <Target Name="BuildChassisFrontend"
-          BeforeTargets="Build"
-          Condition="'$(BuildFrontend)' == 'true' and Exists('$(ChassisFrontendDir)package.json')"
-          Inputs="@(ChassisFrontendSource)"
-          Outputs="$(ChassisFrontendStamp)">
+  <Target Name="BuildChassisFrontend" BeforeTargets="Build" Condition="'$(BuildFrontend)' == 'true' and Exists('$(ChassisFrontendDir)package.json')" Inputs="@(ChassisFrontendSource)" Outputs="$(ChassisFrontendStamp)">
     <Message Importance="high" Text="Chassis: building React SPA (packages/ui) → wwwroot/" />
     <Exec Command="npm ci" WorkingDirectory="$(ChassisRepoRoot)" Condition="!Exists('$(ChassisRepoRoot)node_modules')" />
     <Exec Command="npm run build --workspace @chassis/ui" WorkingDirectory="$(ChassisRepoRoot)" />
     <Touch Files="$(ChassisFrontendStamp)" AlwaysCreate="true" />
   </Target>
 
-  <Target Name="CopyChassisFrontendToWwwroot"
-          AfterTargets="BuildChassisFrontend"
-          BeforeTargets="Build"
-          Condition="Exists('$(ChassisFrontendDist)')">
+  <Target Name="CopyChassisFrontendToWwwroot" AfterTargets="BuildChassisFrontend" BeforeTargets="Build" Condition="Exists('$(ChassisFrontendDist)')">
     <ItemGroup>
       <ChassisFrontendDistFiles Include="$(ChassisFrontendDist)\**\*" />
     </ItemGroup>
-    <Copy SourceFiles="@(ChassisFrontendDistFiles)"
-          DestinationFiles="@(ChassisFrontendDistFiles->'$(MSBuildProjectDirectory)\wwwroot\%(RecursiveDir)%(Filename)%(Extension)')"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ChassisFrontendDistFiles)" DestinationFiles="@(ChassisFrontendDistFiles->'$(MSBuildProjectDirectory)\wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
   </Target>
 
 </Project>

@@ -8,7 +8,7 @@
   },
   "publish": {
     "provider": "github",
-    "owner": "OWNER",
+    "owner": "ebondi16",
     "repo": "chassis",
     "releaseType": "release"
   },

@@ -10,22 +10,45 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// True when the assembly is loaded only to emit the OpenAPI document at build
-// time (GetDocument.Insider): it must not migrate a database or spin up Electron.
-var isDocumentGeneration = Assembly.GetEntryAssembly()?.GetName().Name is "GetDocument.Insider";
+// True when the assembly is loaded by build/design-time tooling to read metadata
+// (OpenAPI document generation via GetDocument.Insider, or `dotnet ef`) rather
+// than to serve requests: such a load must not spin up Electron, migrate a
+// database, or require real connection config.
+var isToolingLoad =
+    Assembly.GetEntryAssembly()?.GetName().Name is "GetDocument.Insider"
+    || EF.IsDesignTime;
 
 // --- Composition root -------------------------------------------------------
 // Program.cs only wires layers together. It never reaches into Domain or
 // Application internals, and never calls Electron.* — the desktop/web toggle is
 // this one branch, and every ElectronNET call lives in DesktopComposition (§9.4).
-if (!isDocumentGeneration && DesktopComposition.IsDesktopRun(args))
+var isDesktop = !isToolingLoad && DesktopComposition.IsDesktopRun(args);
+if (isDesktop)
 {
     DesktopComposition.Enable(builder, args);
 }
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(
-    builder.Configuration.GetConnectionString("Chassis") ?? "Data Source=chassis.db");
+
+// Database provider: SQLite for the desktop build, PostgreSQL for a hosted
+// deployment (§4.2). `Database:Provider` config overrides the mode default, so
+// you can run the desktop build against Postgres for a test, or vice versa.
+// Tooling loads never touch a database, so they use a harmless SQLite default
+// rather than requiring real connection config.
+var databaseProvider = isToolingLoad
+    ? DatabaseProvider.Sqlite
+    : builder.Configuration.GetValue<DatabaseProvider?>("Database:Provider")
+        ?? (isDesktop ? DatabaseProvider.Sqlite : DatabaseProvider.Postgres);
+
+var connectionString = isToolingLoad
+    ? "Data Source=chassis.designtime.db"
+    : builder.Configuration.GetConnectionString("Chassis")
+        ?? (databaseProvider == DatabaseProvider.Sqlite
+            ? "Data Source=chassis.db"
+            : throw new InvalidOperationException(
+                "ConnectionStrings:Chassis must be set when the database provider is Postgres."));
+
+builder.Services.AddInfrastructure(databaseProvider, connectionString);
 
 builder.Services.AddOpenApi();
 builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
@@ -33,10 +56,11 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
-// Bring the local SQLite database up to the latest migration on startup. This is
-// wanted for the desktop build (the app self-migrates its own db on upgrade);
-// a hosted web deployment would instead run migrations as an explicit deploy step.
-if (!isDocumentGeneration)
+// Bring the database up to the latest migration on startup. Wanted for the
+// desktop build (the app self-migrates its own store on upgrade); a hosted web
+// deployment would instead run migrations as an explicit deploy step. EF picks
+// the migrations assembly that matches the configured provider.
+if (!isToolingLoad)
 {
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<ChassisDbContext>();

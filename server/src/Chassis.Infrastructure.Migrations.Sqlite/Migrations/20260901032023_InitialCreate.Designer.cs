@@ -3,16 +3,19 @@ using System;
 using Chassis.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Chassis.Infrastructure.Persistence.Migrations
+namespace Chassis.Infrastructure.Migrations.Sqlite.Migrations
 {
     [DbContext(typeof(ChassisDbContext))]
-    partial class ChassisDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260901032023_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");

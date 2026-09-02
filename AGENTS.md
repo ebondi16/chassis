@@ -28,9 +28,14 @@ dotnet build server/Chassis.slnx && npm run generate:api-client
 # desktop installer:
 dotnet publish server/src/Chassis.Api -c Release -r win-x64 --self-contained false
 
-# new migration:
-dotnet ef migrations add <Name> --project server/src/Chassis.Infrastructure \
-  --startup-project server/src/Chassis.Api --output-dir Persistence/Migrations
+# new migration — run BOTH providers (migrations are per-provider assemblies):
+ChassisMigrationsProvider=Sqlite  dotnet ef migrations add <Name> \
+  --project server/src/Chassis.Infrastructure.Migrations.Sqlite \
+  --startup-project server/src/Chassis.Api --no-build -o Migrations
+ChassisMigrationsProvider=Postgres dotnet ef migrations add <Name> \
+  --project server/src/Chassis.Infrastructure.Migrations.Npgsql \
+  --startup-project server/src/Chassis.Api --no-build -o Migrations
+# (build the solution first so --no-build has fresh output)
 ```
 
 ## Architecture rules — do not break these
@@ -45,6 +50,13 @@ dotnet ef migrations add <Name> --project server/src/Chassis.Infrastructure \
   and never reassigned. A new aggregate must implement `IAggregateRoot` and add
   its own `HasQueryFilter(...)` in `ChassisDbContext.OnModelCreating` — the
   write-path tenant guard then covers it for free.
+- **Database provider:** SQLite (desktop) or PostgreSQL (web), chosen in
+  `Program.cs` — `Database:Provider` config, else `isDesktop ? Sqlite : Postgres`.
+  Migrations are **per-provider assemblies** (`Chassis.Infrastructure.Migrations.Sqlite`
+  / `.Npgsql`), selected via `MigrationsAssembly(...)` in `AddInfrastructure`.
+  Any model change needs a migration added to **both** (see Commands). Local dev
+  (`appsettings.Development.json`) always uses SQLite. `ChassisDbContext`
+  branches on `Database.IsSqlite()` only for the `DateTimeOffset` store type.
 - **Electron is isolated:** every `using ElectronNET` / `Electron.*` call lives
   in `server/src/Chassis.Api/DesktopComposition/`. No other file references
   ElectronNET. `Program.cs` only calls `DesktopComposition.IsDesktopRun(args)`

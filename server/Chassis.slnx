@@ -3,6 +3,8 @@
     <Project Path="src/Chassis.Api/Chassis.Api.csproj" />
     <Project Path="src/Chassis.Application/Chassis.Application.csproj" />
     <Project Path="src/Chassis.Domain/Chassis.Domain.csproj" />
+    <Project Path="src/Chassis.Infrastructure.Migrations.Npgsql/Chassis.Infrastructure.Migrations.Npgsql.csproj" />
+    <Project Path="src/Chassis.Infrastructure.Migrations.Sqlite/Chassis.Infrastructure.Migrations.Sqlite.csproj" />
     <Project Path="src/Chassis.Infrastructure/Chassis.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">

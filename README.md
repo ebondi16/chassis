@@ -32,7 +32,9 @@ chassis/
 │   └── src/
 │       ├── Chassis.Domain/              entities, value objects, aggregates — no framework deps
 │       ├── Chassis.Application/         CQRS-lite use cases (MediatR), validation, DTOs
-│       ├── Chassis.Infrastructure/      EF Core (SQLite), repositories, tenant provider
+│       ├── Chassis.Infrastructure/      EF Core, repositories, tenant provider, provider switch
+│       ├── Chassis.Infrastructure.Migrations.Sqlite/   SQLite migrations (desktop)
+│       ├── Chassis.Infrastructure.Migrations.Npgsql/   PostgreSQL migrations (web)
 │       └── Chassis.Api/                 ASP.NET Core — API + OpenAPI + serves the SPA
 │           ├── DesktopComposition/      every Electron.NET call lives here (and only here)
 │           └── Properties/              electron-builder{,.release}.json, launchSettings
@@ -101,6 +103,36 @@ dotnet run --project server/src/Chassis.Api -- --desktop
 Launches Electron pointed at the app's own local URL. All window / menu / IPC /
 auto-update code is in `Chassis.Api/DesktopComposition/`; `Program.cs` only
 branches on whether to enable it.
+
+---
+
+## Database
+
+One shared database, one schema, row-level `TenantId` isolation (design §4.2).
+The provider is chosen in `Program.cs`: `Database:Provider` config if set,
+otherwise **SQLite for the desktop build, PostgreSQL for a hosted deployment**.
+Local dev (`appsettings.Development.json`) always uses SQLite, so `dotnet run`
+needs no database. A PostgreSQL deployment must supply
+`ConnectionStrings:Chassis` (e.g. `ConnectionStrings__Chassis=Host=…`).
+
+Migrations are **per-provider assemblies** — `Chassis.Infrastructure.Migrations.Sqlite`
+and `.Npgsql`. The schema shape is identical; only the physical column types
+differ (`uuid` / `timestamptz` on Postgres, `TEXT` / `INTEGER` on SQLite). After
+any model change, add the migration to **both**:
+
+```sh
+dotnet build server/Chassis.slnx
+
+ChassisMigrationsProvider=Sqlite  dotnet ef migrations add <Name> \
+  --project server/src/Chassis.Infrastructure.Migrations.Sqlite \
+  --startup-project server/src/Chassis.Api --no-build -o Migrations
+ChassisMigrationsProvider=Postgres dotnet ef migrations add <Name> \
+  --project server/src/Chassis.Infrastructure.Migrations.Npgsql \
+  --startup-project server/src/Chassis.Api --no-build -o Migrations
+```
+
+The app runs `Database.Migrate()` on startup against whichever provider is
+configured.
 
 ---
 
