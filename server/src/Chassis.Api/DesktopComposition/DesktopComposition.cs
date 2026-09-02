@@ -19,8 +19,27 @@ internal static class DesktopComposition
     /// a plain web server: either launched with <c>--desktop</c> (dotnet-first
     /// dev run) or started by Electron itself (packaged, electron-first — §5.2).
     /// </summary>
-    public static bool IsDesktopRun(string[] args) =>
-        args.Contains(DesktopArg) || HybridSupport.IsElectronActive;
+    public static bool IsDesktopRun(string[] args)
+    {
+        if (args.Contains(DesktopArg))
+        {
+            return true;
+        }
+
+        try
+        {
+            return HybridSupport.IsElectronActive;
+        }
+        catch
+        {
+            // The ElectronNET.Core runtime can't initialize at all — e.g. the
+            // process is hosted by a test harness or a build-time tool whose
+            // entry assembly never got the [AssemblyMetadata] the package's
+            // MSBuild targets inject into Chassis.Api. If the Electron runtime
+            // isn't there, this is by definition not the Electron shell.
+            return false;
+        }
+    }
 
     /// <summary>
     /// Turns this ASP.NET Core app into the desktop shell: registers Electron

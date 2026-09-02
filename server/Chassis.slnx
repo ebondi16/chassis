@@ -6,6 +6,7 @@
     <Project Path="src/Chassis.Infrastructure/Chassis.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Chassis.Api.Tests/Chassis.Api.Tests.csproj" />
     <Project Path="tests/Chassis.Application.Tests/Chassis.Application.Tests.csproj" />
     <Project Path="tests/Chassis.Domain.Tests/Chassis.Domain.Tests.csproj" />
     <Project Path="tests/Chassis.Infrastructure.Tests/Chassis.Infrastructure.Tests.csproj" />

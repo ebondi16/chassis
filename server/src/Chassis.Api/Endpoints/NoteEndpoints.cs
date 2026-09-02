@@ -8,7 +8,12 @@ namespace Chassis.Api.Endpoints;
 
 internal static class NoteEndpoints
 {
-    public static IEndpointRouteBuilder MapNoteEndpoints(this IEndpointRouteBuilder app)
+    /// <returns>
+    /// The notes route group, so the composition root can layer conventions on it
+    /// — e.g. <c>.RequireAuthorization()</c> for a web run (the desktop build has
+    /// no auth, §7.2).
+    /// </returns>
+    public static RouteGroupBuilder MapNoteEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/notes").WithTags("Notes");
 
@@ -41,7 +46,7 @@ internal static class NoteEndpoints
             .Produces<NoteDto>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
-        return app;
+        return group;
     }
 
     /// <summary>Request body for <c>POST /api/notes</c>; the tenant is never taken from the caller.</summary>

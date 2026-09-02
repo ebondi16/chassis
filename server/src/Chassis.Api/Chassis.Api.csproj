@@ -34,6 +34,13 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Scalar.AspNetCore" />
+    <!-- Web auth stack (docs/design_dotnet-auth-identity.md). Confined to
+         Chassis.Api/Identity/; loaded only for a web run (§5.3: desktop has no login). -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="OpenIddict.AspNetCore" />
+    <PackageReference Include="OpenIddict.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <!-- Desktop shell. Every ElectronNET call lives in DesktopComposition/ (§9.4);
          the -p:BuildFrontend branch and Program.cs never touch Electron.* . -->
     <PackageReference Include="ElectronNET.Core" />
@@ -48,6 +55,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Chassis.Application\Chassis.Application.csproj" />
     <ProjectReference Include="..\Chassis.Infrastructure\Chassis.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Chassis.Api.Tests" />
   </ItemGroup>
 
   <!-- =====================================================================

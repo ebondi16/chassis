@@ -28,9 +28,14 @@ dotnet build server/Chassis.slnx && npm run generate:api-client
 # desktop installer:
 dotnet publish server/src/Chassis.Api -c Release -r win-x64 --self-contained false
 
-# new migration:
+# new migration (domain data — ChassisDbContext, in Chassis.Infrastructure):
 dotnet ef migrations add <Name> --project server/src/Chassis.Infrastructure \
   --startup-project server/src/Chassis.Api --output-dir Persistence/Migrations
+
+# new migration (web auth — ChassisAuthDbContext, Identity + OpenIddict, in Chassis.Api):
+dotnet ef migrations add <Name> --project server/src/Chassis.Api \
+  --startup-project server/src/Chassis.Api --context ChassisAuthDbContext \
+  --output-dir Identity/Persistence/Migrations
 ```
 
 ## Architecture rules — do not break these
@@ -49,6 +54,16 @@ dotnet ef migrations add <Name> --project server/src/Chassis.Infrastructure \
   in `server/src/Chassis.Api/DesktopComposition/`. No other file references
   ElectronNET. `Program.cs` only calls `DesktopComposition.IsDesktopRun(args)`
   and `DesktopComposition.Enable(builder, args)`.
+- **Web auth is isolated:** ASP.NET Core Identity + OpenIddict + the
+  Backend-for-Frontend flow (`docs/design_dotnet-auth-identity.md`) live in
+  `server/src/Chassis.Api/Identity/`. `Program.cs` only calls
+  `IdentityComposition.AddChassisIdentity/UseChassisIdentity`, guarded so it
+  loads for a **web run only** — never desktop (§5.3, no login), never
+  doc-generation. Its EF store is `ChassisAuthDbContext` (its own migrations,
+  same physical database as the domain data). The web `ITenantProvider` is
+  `Chassis.Api/Tenancy/ClaimsTenantProvider` (tenant from the `tenant_id`
+  claim); desktop keeps `LocalFixedTenantProvider`. Nothing auth-related is
+  added to Domain / Application / Infrastructure.
 - **Frontend talks to the API only through `@chassis/api-client`** — no
   hand-written `fetch`, no duplicated response types.
 
