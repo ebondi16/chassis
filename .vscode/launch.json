@@ -1,0 +1,44 @@
+{
+  // Two ways to run Chassis.Api from the same build:
+  //   "Web app"     — plain ASP.NET Core, SPA on http://localhost:5030,
+  //                   PostgreSQL in Docker (started + waited on by the
+  //                   "web: db + build" preLaunchTask)
+  //   "Desktop app" — passes --desktop, which launches the Electron.NET shell
+  //                   (DesktopComposition/) on a dynamic localhost port, SQLite
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Chassis: Web app",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "web: db + build",
+      "program": "${workspaceFolder}/server/src/Chassis.Api/bin/Debug/net10.0/Chassis.Api.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/server/src/Chassis.Api",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5030",
+        "Database__Provider": "Postgres",
+        "ConnectionStrings__Chassis": "Host=localhost;Port=5432;Database=chassis;Username=chassis;Password=chassis"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      }
+    },
+    {
+      "name": "Chassis: Desktop app (Electron)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/server/src/Chassis.Api/bin/Debug/net10.0/Chassis.Api.dll",
+      "args": ["--desktop"],
+      "cwd": "${workspaceFolder}/server/src/Chassis.Api",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  ]
+}

@@ -23,10 +23,19 @@ var isToolingLoad =
 
 var isDesktopRun = !isToolingLoad && DesktopComposition.IsDesktopRun(args);
 
+// Local-debug escape hatch: `Auth:Disabled=true` (honoured in the Development
+// environment only) runs the web build with the auth stack switched off, so the
+// API is reachable without a login. The tenant then falls back to
+// Infrastructure's LocalFixedTenantProvider, exactly as the desktop build does.
+var authDisabledForDebug =
+    builder.Environment.IsDevelopment()
+    && builder.Configuration.GetValue<bool>("Auth:Disabled");
+
 // The web auth stack — ASP.NET Core Identity + OpenIddict + the Backend-for-
 // Frontend (auth doc §5.1) — loads for a hosted web run only: never for the
-// desktop build (§5.3, no login) and never for build/design-time tooling.
-var isWebAuth = !isToolingLoad && !isDesktopRun;
+// desktop build (§5.3, no login), never for build/design-time tooling, and not
+// when the debug escape hatch above is set.
+var isWebAuth = !isToolingLoad && !isDesktopRun && !authDisabledForDebug;
 
 // --- Composition root -------------------------------------------------------
 // Program.cs only wires layers together. It never reaches into Domain or

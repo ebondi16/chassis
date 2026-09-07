@@ -1,0 +1,33 @@
+# PostgreSQL for the web build's local dev loop (README "Database").
+#
+# The desktop build uses SQLite and never needs this. The VS Code
+# "Chassis: Web app" launch config runs `docker compose up -d --wait`, which
+# blocks until the healthcheck below passes, before starting the API. The API
+# then applies EF migrations against this database on startup.
+#
+#   docker compose up -d --wait   # start, wait until ready
+#   docker compose down           # stop (keeps the volume / data)
+#   docker compose down -v        # stop and wipe the database
+
+name: chassis
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: chassis
+      POSTGRES_PASSWORD: chassis
+      POSTGRES_DB: chassis          # the `chassis` database is created on first init
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chassis -d chassis"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
+volumes:
+  pgdata:

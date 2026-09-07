@@ -1,0 +1,43 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Builds the whole solution, which also builds packages/ui into
+      // Chassis.Api/wwwroot/. Add  -p:BuildFrontend=false  to skip the SPA build.
+      "label": "build",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/server/Chassis.slnx",
+        "-p:GenerateFullPaths=true",
+        "-consoleLoggerParameters:NoSummary"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      // Web only: start PostgreSQL (docker-compose.yml) and block until it is
+      // accepting connections. Fast no-op when the container is already healthy.
+      // Desktop uses SQLite and does not run this.
+      "label": "db-up",
+      "command": "docker",
+      "type": "process",
+      "args": ["compose", "up", "-d", "--wait"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      // preLaunchTask for "Chassis: Web app": bring up the database, then build.
+      "label": "web: db + build",
+      "dependsOrder": "sequence",
+      "dependsOn": ["db-up", "build"],
+      "problemMatcher": []
+    }
+  ]
+}
